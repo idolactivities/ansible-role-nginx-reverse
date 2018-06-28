@@ -22,6 +22,13 @@ nginx_reverse_endpoints:
     ssl_certificate_key: "{{ lookup('file', ssl_host_key_path) }}"
     directives:
       - client_max_body_size 10m
+    locations:
+      = /favicon.ico:
+        - access_log off
+        - log_not_found off
+      /robots.txt:
+        - access_log off
+        - log_not_found off
     domains:
       - https-service-with-directives.local
     backend_protocol: https

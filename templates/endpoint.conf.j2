@@ -46,4 +46,13 @@ server {
         proxy_set_header   X-Forwarded-Proto $scheme;
         proxy_pass         {{ item.backend_protocol | default('http') }}://{{ item.name }};
     }
+{% if 'locations' in item and item.locations is mapping %}
+{%     for path, directives in item.locations.items() %}
+    location {{ path }} {
+{%         for entry in directives %}
+    {{ entry }};
+{%         endfor %}
+    }
+{%     endfor %}
+{% endif %}
 }
