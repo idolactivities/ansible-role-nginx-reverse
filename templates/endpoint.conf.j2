@@ -50,7 +50,7 @@ server {
 {%     for path, directives in item.locations.items() %}
     location {{ path }} {
 {%         for entry in directives %}
-    {{ entry }};
+        {{ entry }};
 {%         endfor %}
     }
 {%     endfor %}
