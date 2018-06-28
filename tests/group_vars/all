@@ -23,7 +23,7 @@ nginx_reverse_endpoints:
     directives:
       - client_max_body_size 10m
     locations:
-      "= /favicon.ico":
+      = /favicon.ico:
         - access_log off
         - log_not_found off
       /robots.txt:
