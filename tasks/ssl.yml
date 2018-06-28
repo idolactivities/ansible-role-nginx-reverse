@@ -1,0 +1,27 @@
+---
+- name: Ensure SSL directory for Nginx exists
+  file:
+    path: "{{ nginx_reverse_ssl_directory }}"
+    state: directory
+    mode: 0700
+
+- name: Create DH PEM file for Nginx
+  command: "openssl dhparam -out {{ nginx_reverse_ssl_directory }}/dhparams.pem 2048"
+  args:
+    creates: "{{ nginx_reverse_ssl_directory }}/dhparams.pem"
+
+- name: Store Nginx SSL keys
+  copy:
+    content: "{{ item.ssl_certificate_key }}"
+    dest: "{{ nginx_reverse_ssl_directory }}/{{ item.name }}.key"
+    mode: 0600
+  with_items: "{{ nginx_reverse_endpoints }}"
+  when: "'ssl_certificate_key' in item"
+
+- name: Store Nginx SSL certificates
+  copy:
+    content: "{{ item.ssl_certificate }}"
+    dest: "{{ nginx_reverse_ssl_directory }}/{{ item.name }}.pem"
+    mode: 0600
+  with_items: "{{ nginx_reverse_endpoints }}"
+  when: "'ssl_certificate' in item"

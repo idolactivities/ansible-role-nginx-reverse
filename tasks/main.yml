@@ -1,0 +1,38 @@
+---
+- name: Ensure site logs directory for Nginx exists
+  file:
+    path: "{{ nginx_reverse_site_logs_directory }}"
+    state: directory
+    owner: www-data
+    mode: 0755
+
+- name: Configure SELinux to permit outgoing connections
+  seboolean:
+    name: httpd_can_network_connect
+    state: yes
+    persistent: yes
+  when:
+    - ansible_selinux is defined
+    - "'status' in ansible_selinux and ansible_selinux.status == 'enabled'"
+
+- import_tasks: ssl.yml
+
+- name: Configure Nginx reverse proxy site definitions
+  template:
+    src: endpoint.conf.j2
+    dest: "{{ nginx_sites_available_dir }}/{{ item.name }}.conf"
+  with_items: "{{ nginx_reverse_endpoints }}"
+  register: _nginx_reverse_definitions
+
+- name: Activate Nginx reverse proxy site definitions
+  file:
+    state: "{{ 'absent' if ('enabled' in item and not item.enabled) else 'link' }}"
+    src: "{{ nginx_sites_available_dir }}/{{ item.name }}.conf"
+    dest: "{{ nginx_sites_enabled_dir }}/{{ item.name }}.conf"
+  with_items: "{{ nginx_reverse_endpoints }}"
+  register: _nginx_reverse_definition_symlinks
+
+- name: Validate Nginx configuration
+  command: /usr/sbin/nginx -t
+  notify: reload nginx
+  when: _nginx_reverse_definitions is changed or _nginx_reverse_definition_symlinks is changed

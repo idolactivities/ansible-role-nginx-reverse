@@ -1,0 +1,48 @@
+---
+- hosts: localhost
+  connection: local
+  roles:
+    - lae.travis-lxc
+  post_tasks:
+    - name: Create SSL directory for storing secrets
+      file:
+        dest: "{{ ssl_directory }}"
+        state: directory
+    - name: Create Root CA private key
+      shell: "openssl genrsa -out {{ ssl_ca_key_path }} 2048"
+    - name: Create Root CA certificate
+      shell: "openssl req -x509 -new -nodes -key {{ ssl_ca_key_path }} -sha256 -days 1 -subj '{{ ssl_subj }}' -out {{ ssl_ca_cert_path }}"
+  vars:
+    test_profiles:
+      - profile: debian-stretch
+      - profile: centos-7
+      - profile: ubuntu-bionic
+
+- hosts: all
+  pre_tasks:
+    - block:
+      - name: Install Root CA certificate
+        copy:
+          src: "{{ ssl_ca_cert_path }}"
+          dest: /usr/local/share/ca-certificates/test-ca.crt
+      - name: Update CA certificate store
+        shell: update-ca-certificates
+      become: True
+      when: "ansible_os_family == 'Debian'"
+    - block:
+      - name: Install Root CA certificate
+        copy:
+          src: "{{ ssl_ca_cert_path }}"
+          dest: /etc/pki/ca-trust/source/anchors/test-ca.crt
+      - name: Update CA certificate store
+        shell: update-ca-trust
+      become: True
+      when: "ansible_os_family == 'RedHat'"
+    - block:
+      - name: Create host SSL private key
+        shell: "openssl genrsa -out {{ ssl_host_key_path }} 2048"
+      - name: Create host SSL certificate signing request
+        shell: "openssl req -new -key {{ ssl_host_key_path }} -subj '{{ ssl_subj }}' -out {{ ssl_host_csr_path }}"
+      - name: Create host SSL certificate
+        shell: "openssl x509 -req -in {{ ssl_host_csr_path }} -CA {{ ssl_ca_cert_path }} -CAkey {{ ssl_ca_key_path }} -days 1 -CAcreateserial -sha256 -out {{ ssl_host_cert_path }}"
+      delegate_to: localhost

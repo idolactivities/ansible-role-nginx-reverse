@@ -1,0 +1,30 @@
+---
+- hosts: nginx
+  tasks:
+    - name: Check that nginx is enabled and started
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+      register: __result
+      failed_when: __result is changed
+    - name: Output generated Nginx configurations
+      shell: "find /etc/nginx/sites-enabled/ -print -exec cat {} \\;"
+      ignore_errors: yes
+    - name: Check that nginx is listening on HTTP
+      uri:
+        url: "http://{{ inventory_hostname }}"
+        return_content: yes
+    - name: Check that nginx is listening on HTTPS
+      uri:
+        url: "https://{{ inventory_hostname }}"
+        return_content: yes
+    - name: Test existence of files
+      stat:
+        path: "{{ item }}"
+      register: __result
+      failed_when: "__result.stat.isreg is not defined or not __result.stat.isreg"
+      with_items:
+        - /etc/nginx/sites-available/test-http.conf
+        - /etc/nginx/sites-available/test-https.conf
+        - /etc/nginx/sites-available/test-https-with-directives.conf

@@ -1,0 +1,49 @@
+# {{ ansible_managed }}
+upstream {{ item.name }} {
+{% if 'lb_method' in item %}
+    {{ item.lb_method }};
+{% endif %}
+{% for backend in item.backends %}
+    server {{ backend }};
+{% endfor %}
+}
+
+{% if 'ssl_certificate' in item and
+       'ssl_certificate_key' in item and
+       ('ssl_redirect' in item and
+           item.ssl_redirect) %}
+server {
+    server_name {{ item.domains | join(' ') }};
+    listen {{ nginx_reverse_http_port }};
+    access_log {{ nginx_reverse_site_logs_directory }}/$server_name.http.log;
+
+    rewrite ^ https://$server_name$request_uri? permanent;
+}
+{% endif %}
+
+server {
+    server_name {{ item.domains | join(' ') }};
+{% if not ('ssl_certificate' in item and 'ssl_certificate_key' in item) %}
+    listen {{ nginx_reverse_http_port }};
+    access_log {{ nginx_reverse_site_logs_directory }}/$server_name.http.log;
+{% else %}
+    listen {{ nginx_reverse_https_port }} ssl;
+    access_log {{ nginx_reverse_site_logs_directory }}/$server_name.https.log;
+    ssl_certificate {{ nginx_reverse_ssl_directory }}/{{ item.name }}.pem;
+    ssl_certificate_key {{ nginx_reverse_ssl_directory }}/{{ item.name }}.key;
+{% endif %}
+
+{% if 'directives' in item and item.directives is iterable %}
+{%     for entry in item.directives %}
+    {{ entry }};
+{%     endfor %}
+{% endif %}
+
+    location / {
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   Host              $http_host;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_pass         {{ item.backend_protocol | default('http') }}://{{ item.name }};
+    }
+}

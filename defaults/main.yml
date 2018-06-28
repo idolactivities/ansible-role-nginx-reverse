@@ -1,0 +1,5 @@
+---
+nginx_reverse_http_port: 80
+nginx_reverse_https_port: 443
+nginx_reverse_site_logs_directory: /var/log/nginx/sites
+nginx_reverse_ssl_directory: "{{ nginx_config_dir }}/ssl"

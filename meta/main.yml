@@ -1,0 +1,27 @@
+---
+dependencies:
+  - idolactivities.nginx
+
+galaxy_info:
+  author: lae
+  company: Idol Activities
+  description: Configure a reverse proxy host under Nginx
+  license: MIT
+  platforms:
+  - name: Debian
+    versions:
+      - stretch
+      - jessie
+      - sid
+  - name: Ubuntu
+    versions:
+      - bionic
+      - trusty
+      - xenial
+  - name: EL
+    versions:
+      - 7
+  categories:
+  - cloud
+  - system
+  - web
