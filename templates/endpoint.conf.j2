@@ -10,7 +10,7 @@ upstream {{ item.name }} {
 
 {% if 'ssl_certificate' in item and
        'ssl_certificate_key' in item and
-       ('ssl_redirect' in item and
+       ('ssl_redirect' not in item or
            item.ssl_redirect) %}
 server {
     server_name {{ item.domains | join(' ') }};
@@ -19,8 +19,8 @@ server {
 
     rewrite ^ https://$server_name$request_uri? permanent;
 }
-{% endif %}
 
+{% endif %}
 server {
     server_name {{ item.domains | join(' ') }};
 {% if not ('ssl_certificate' in item and 'ssl_certificate_key' in item) %}
